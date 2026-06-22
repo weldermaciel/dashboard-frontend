@@ -7,7 +7,7 @@ export default function Home() {
   const [erro, setErro] = useState('');
 
   useEffect(() => {
-    async function fetchWithRetry(url, retries = 3, delay = 1000) {
+async function fetchWithRetry(url: string, options = {}, retries = 3, delay = 1000) {
       for (let i = 0; i < retries; i++) {
         try {
           const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
