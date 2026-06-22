@@ -7,17 +7,27 @@ export default function Home() {
   const [erro, setErro] = useState('');
 
   useEffect(() => {
+    async function fetchWithRetry(url, retries = 3, delay = 1000) {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+          if (response.ok) return response.json();
+        } catch (err) {
+          console.log(`Tentativa ${i + 1} falhou, tentando novamente...`);
+        }
+        // Aguarda antes de tentar de novo (dobra o tempo a cada tentativa)
+        await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
+      }
+      throw new Error('Backend não respondeu após várias tentativas');
+    }
+
     async function conectarBackend() {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
       try {
-        const res = await fetch(process.env.NEXT_PUBLIC_API_URL + '/', {
-          // Timeout maior porque o Render free pode estar dormindo
-          signal: AbortSignal.timeout(15000)
-        });
-        if (!res.ok) throw new Error('Erro HTTP: ' + res.status);
-        const data = await res.json();
+        const data = await fetchWithRetry(`${apiUrl}/`, 4, 2000);
         setMensagem(data.message || 'Conectado!');
       } catch (err) {
-        setErro('Backend ainda não respondeu. Pode estar "acordando"...');
+        setErro('Backend demorou para acordar. Tente recarregar a página.');
         console.error(err);
       }
     }
