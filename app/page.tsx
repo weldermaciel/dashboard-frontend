@@ -44,9 +44,15 @@ export default function Home() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL;
         const token = session.access_token;
-        const res = await fetch(`${apiUrl}/api/indicadores`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const refreshToken = session.refresh_token?? '';
+
+        const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+        if (refreshToken) {
+          headers['X-Refresh-Token'] = refreshToken;
+        }
+
+        const res = await fetch(`${apiUrl}/api/indicadores`, { headers });
+
         if (!res.ok) throw new Error('Erro ao carregar');
         const json = await res.json();
         setIndicadores(json.indicadores || []);
