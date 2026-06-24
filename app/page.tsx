@@ -62,7 +62,7 @@ export default function Home() {
   }, [session]);
 
   if (sessionLoading) return <p>Carregando...</p>;
-  if (!session) return <Login onLogin={() => window.location.reload()} />;
+if (!session) return <Login onLogin={() => {}} />;
 
   const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
@@ -70,10 +70,10 @@ export default function Home() {
     <main style={{ padding: '2rem', fontFamily: 'Arial' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>Dashboard de Indicadores</h1>
-        <button onClick={() => { supabase.auth.signOut(); window.location.reload(); }}
-          style={{ padding: '6px 12px', cursor: 'pointer' }}>
-          Sair
-        </button>
+  <button onClick={() => supabase.auth.signOut()}
+    style={{ padding: '6px 12px', cursor: 'pointer' }}>
+    Sair
+  </button>
       </div>
 
       {erro && <p style={{ color: 'red' }}>{erro}</p>}
