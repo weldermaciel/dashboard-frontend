@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { useSession } from '@/hooks/useSession';
+import Login from '@/components/Login';
 
 type Indicador = {
   id: string;
@@ -29,31 +32,26 @@ type Indicador = {
 };
 
 export default function Home() {
+  const { session, loading: sessionLoading } = useSession();
   const [indicadores, setIndicadores] = useState<Indicador[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
 
   useEffect(() => {
-    async function fetchComRetry(url: string, tentativas = 5, delay = 2000) {
-      for (let i = 0; i < tentativas; i++) {
-        try {
-          const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
-          if (res.ok) return res.json();
-        } catch (e) {
-          console.log(`Tentativa ${i + 1} falhou, aguardando...`);
-        }
-        await new Promise(r => setTimeout(r, delay * (i + 1)));
-      }
-      throw new Error('Backend não respondeu após várias tentativas');
-    }
+    if (!session) return;
 
     async function carregarDados() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-        const json = await fetchComRetry(`${apiUrl}/api/indicadores`);
+        const token = session.access_token;
+        const res = await fetch(`${apiUrl}/api/indicadores`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error('Erro ao carregar');
+        const json = await res.json();
         setIndicadores(json.indicadores || []);
       } catch (err: any) {
-        setErro('Não foi possível carregar os indicadores. O servidor pode estar iniciando...');
+        setErro('Não foi possível carregar os indicadores.');
         console.error(err);
       } finally {
         setCarregando(false);
@@ -61,20 +59,25 @@ export default function Home() {
     }
 
     carregarDados();
-  }, []);
+  }, [session]);
+
+  if (sessionLoading) return <p>Carregando...</p>;
+  if (!session) return <Login onLogin={() => window.location.reload()} />;
 
   const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
   return (
     <main style={{ padding: '2rem', fontFamily: 'Arial' }}>
-      <h1>Dashboard de Indicadores</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>Dashboard de Indicadores</h1>
+        <button onClick={() => { supabase.auth.signOut(); window.location.reload(); }}
+          style={{ padding: '6px 12px', cursor: 'pointer' }}>
+          Sair
+        </button>
+      </div>
 
-      {carregando && <p style={{ color: '#666' }}>Carregando dados...</p>}
       {erro && <p style={{ color: 'red' }}>{erro}</p>}
-
-      {!carregando && indicadores.length === 0 && !erro && (
-        <p>Nenhum indicador encontrado.</p>
-      )}
+      {carregando && <p>Carregando dados...</p>}
 
       {indicadores.length > 0 && (
         <div style={{ overflowX: 'auto' }}>
