@@ -38,9 +38,9 @@ export default function Home() {
   const [erro, setErro] = useState('');
 
   useEffect(() => {
-    if (!session) return;
-
     async function carregarDados() {
+      if (!session) return;  // <-- Adicione esta linha
+
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL;
         const token = session.access_token;
